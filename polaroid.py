@@ -6,8 +6,7 @@ import io
 import requests
 import math
 
-st.set_page_config(page_title="Polaroid Collage Creator", layout="centered")
-
+st.set_page_config(page_title="📸 Polaroid Style Collage Creator", layout="centered")
 st.title("📸 Polaroid Style Collage Creator")
 
 # --- Font Setup ---
@@ -24,13 +23,18 @@ GOOGLE_FONTS = {
     "Reenie Beanie": "https://fonts.gstatic.com/s/reeniebeanie/v19/z7NSdR76eDkaJKZJFkkjuvWxXPq1rg.woff2"
 }
 
-# --- Sidebar options ---
+# Use your own GitHub-hosted font previews here
+FONT_PREVIEWS = {
+    name: f"https://your-username.github.io/polaroid-font-previews/previews/{name.replace(' ', '_')}.png"
+    for name in GOOGLE_FONTS
+}
+
+# --- Sidebar Controls ---
 dpi = st.sidebar.slider("📐 DPI of Final Image", 300, 1200, 300, step=100)
 border_mm = st.sidebar.slider("📏 Border Size (mm)", 0, 6, 3)
-
 uploaded_files = st.file_uploader("📷 Upload Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
-
-font_name = st.sidebar.selectbox("✏️ Choose Font", GOOGLE_FONTS.keys())
+font_name = st.sidebar.radio("✏️ Choose Font (with Preview)", options=list(GOOGLE_FONTS.keys()))
+st.sidebar.image(FONT_PREVIEWS[font_name], caption=font_name, use_column_width=True)
 font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
 file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
 file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
@@ -48,11 +52,10 @@ def crop_center_square(img):
     top = (height - side) // 2
     return img.crop((left, top, left + side, top + side))
 
-def create_polaroid(img, border_px, dpi):
+def create_polaroid(img, border_px):
     side = img.size[0]
     border_total = border_px * 2
-    bottom_extra = border_px * 3  # More space at bottom like a polaroid
-
+    bottom_extra = border_px * 3  # More at bottom
     new_img = Image.new("RGB", (side + border_total, side + border_total + bottom_extra), "white")
     new_img.paste(img, (border_px, border_px))
     return new_img
@@ -68,7 +71,7 @@ def get_collage(images, border_px, dpi, font_bytes, font_color):
 
     for img in images:
         cropped = crop_center_square(img).resize((thumb_size_px, thumb_size_px))
-        polaroid = create_polaroid(cropped, border_px, dpi)
+        polaroid = create_polaroid(cropped, border_px)
         thumbnails.append(polaroid)
 
     polaroid_size = thumbnails[0].size[0]
@@ -85,7 +88,7 @@ def get_collage(images, border_px, dpi, font_bytes, font_color):
         collage.paste(thumb, (x, y))
 
         draw = ImageDraw.Draw(collage)
-        text = f"Photo {idx+1}"
+        text = f"Photo {idx + 1}"
         text_width, text_height = draw.textsize(text, font=font)
         text_x = x + (polaroid_size - text_width) // 2
         text_y = y + polaroid_size - int(border_px * 0.5) - text_height
@@ -93,7 +96,7 @@ def get_collage(images, border_px, dpi, font_bytes, font_color):
 
     return collage
 
-# --- Processing ---
+# --- Main Logic ---
 if uploaded_files:
     st.success(f"{len(uploaded_files)} image(s) uploaded.")
     images = [Image.open(file).convert("RGB") for file in uploaded_files]
@@ -102,14 +105,12 @@ if uploaded_files:
     collage = get_collage(images, border_px, dpi, font_bytes, font_color)
 
     st.image(collage, caption="Polaroid Style Collage", use_column_width=True)
-    
-    # Save logic
+
     os.makedirs(file_path, exist_ok=True)
     final_path = os.path.join(file_path, f"{file_name}.jpg")
     collage.save(final_path, dpi=(dpi, dpi))
     st.success(f"🎉 Image saved to {final_path}")
 
-    # Download
     img_buffer = io.BytesIO()
     collage.save(img_buffer, format="JPEG")
     st.download_button("⬇️ Download Image", data=img_buffer.getvalue(), file_name=f"{file_name}.jpg", mime="image/jpeg")
