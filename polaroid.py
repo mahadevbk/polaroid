@@ -78,10 +78,8 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
         thumbnails.append(polaroid)
 
     polaroid_size = thumbnails[0].size[0]
-    collage_size = (n * polaroid_size, n * polaroid_size + int(border_px * 3))  # Added space for caption
+    collage_size = (n * polaroid_size, n * polaroid_size + int(border_px * 6))  # Doubled bottom space for caption
     collage = Image.new("RGB", collage_size, "white")
-
-    font = ImageFont.truetype(font_path, size=polaroid_size // 10)
 
     for idx, thumb in enumerate(thumbnails):
         row = idx // n
@@ -89,18 +87,6 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
         x = col * polaroid_size
         y = row * polaroid_size
         collage.paste(thumb, (x, y))
-
-        draw = ImageDraw.Draw(collage)
-        text = f"Photo {idx + 1}"
-
-        # Fix for deprecated textsize() method
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-
-        text_x = x + (polaroid_size - text_width) // 2
-        text_y = y + polaroid_size - int(border_px * 0.5) - text_height
-        draw.text((text_x, text_y), text, fill=font_color, font=font)
 
     # Add caption text at the bottom
     if caption_text:
@@ -110,7 +96,7 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
         caption_width = caption_bbox[2] - caption_bbox[0]
         caption_height = caption_bbox[3] - caption_bbox[1]
         caption_x = (collage_size[0] - caption_width) // 2
-        caption_y = collage_size[1] - int(border_px * 1.5) - caption_height
+        caption_y = collage_size[1] - int(border_px * 2) - caption_height  # Increased bottom margin
         draw.text((caption_x, caption_y), caption_text, fill=font_color, font=caption_font)
 
     return collage
