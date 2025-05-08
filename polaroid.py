@@ -24,19 +24,11 @@ GOOGLE_FONTS = {
     "Reenie Beanie": "https://github.com/google/fonts/raw/main/ofl/reeniebeanie/ReenieBeanie-Regular.ttf"
 }
 
-# Optional preview images (can be hosted yourself)
-FONT_PREVIEWS = {
-    name: f"https://your-username.github.io/polaroid-font-previews/previews/{name.replace(' ', '_')}.png"
-    for name in GOOGLE_FONTS
-}
-
 # --- Sidebar Controls ---
 dpi = st.sidebar.slider("📐 DPI of Final Image", 300, 1200, 300, step=100)
 border_mm = st.sidebar.slider("📏 Border Size (mm)", 0, 6, 3)
 uploaded_files = st.file_uploader("📷 Upload Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
 font_name = st.sidebar.radio("✏️ Choose Font (with Preview)", options=list(GOOGLE_FONTS.keys()))
-if font_name in FONT_PREVIEWS:
-    st.sidebar.image(FONT_PREVIEWS[font_name], caption=font_name, use_container_width=True)
 font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
 file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
 file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
@@ -76,11 +68,12 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
     if len(images) < total_images:
         images += images[:total_images - len(images)]
 
-    thumb_size_px = int((25.4 / dpi) * dpi)  # 1 inch square thumbnails
+    # Set a higher size for thumbnails to preserve image resolution (based on DPI)
+    thumb_size_px = int((2 * dpi))  # Resize to twice the DPI size for better resolution
     thumbnails = []
 
     for img in images:
-        cropped = crop_center_square(img).resize((thumb_size_px, thumb_size_px))
+        cropped = crop_center_square(img).resize((thumb_size_px, thumb_size_px), Image.ANTIALIAS)
         polaroid = create_polaroid(cropped, border_px)
         thumbnails.append(polaroid)
 
