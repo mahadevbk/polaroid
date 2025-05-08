@@ -79,19 +79,20 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text, cap
         thumbnails.append(polaroid)
 
     polaroid_size = thumbnails[0].size[0]
-    collage_size = (n * polaroid_size, n * polaroid_size + int(border_px * 6))  # Doubled bottom space for caption
+    
+    # Create the collage size, with half of the border around the entire collage
+    collage_size = (n * polaroid_size + border_px, n * polaroid_size + border_px + int(border_px * 6))  # Doubled bottom space for caption
     collage = Image.new("RGB", collage_size, "white")
 
     # Paste the thumbnails with equal internal gap
     for idx, thumb in enumerate(thumbnails):
         row = idx // n
         col = idx % n
-        x = col * polaroid_size
-        y = row * polaroid_size
+        x = col * polaroid_size + border_px // 2  # Add half border space between images
+        y = row * polaroid_size + border_px // 2
         collage.paste(thumb, (x, y))
 
     # Adjust text size based on DPI, ensuring it scales for different DPI values
-    # For high DPI, scale the caption font size up appropriately
     adjusted_caption_font_size = max(caption_font_size, int(dpi / 100))  # Adjust caption size for higher DPI
 
     # Add caption text at the bottom
