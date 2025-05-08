@@ -1,107 +1,86 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
-import os
 import io
+import os
 
-# --- Configuration ---
-FONT_DIR = "fonts"
-DEFAULT_FONT = "ReenieBeanie-Regular.ttf"
-
-# --- Helper Functions ---
-def crop_center_square(img):
-    width, height = img.size
-    min_dim = min(width, height)
-    left = (width - min_dim) // 2
-    top = (height - min_dim) // 2
-    return img.crop((left, top, left + min_dim, top + min_dim))
-
-def load_font(font_filename, size):
-    font_path = os.path.join(FONT_DIR, font_filename)
-    if not os.path.exists(font_path):
-        st.error(f"Font file not found: {font_path}")
-        return None
-    return ImageFont.truetype(font_path, size=size)
-
-def get_collage(images, border_px, dpi, font_filename, font_color, caption_text, caption_font_size):
-    num_images = len(images)
-    if num_images == 0:
-        return None
-
-    cols = int(num_images ** 0.5)
-    rows = (num_images + cols - 1) // cols
-
-    # Sizes
-    base_thumb_size = 300
-    scale_factor = dpi / 300  # Scale based on DPI
-    thumb_size = int(base_thumb_size * scale_factor)
-
-    half_border = border_px // 2
-    bottom_polaroid_extra = 6 * half_border
-
-    # Create thumbnail images with inner border
-    thumbs = []
-    for img in images:
-        cropped = crop_center_square(img).resize((thumb_size, thumb_size))
-        thumb_with_border = Image.new("RGB", (thumb_size + border_px, thumb_size + border_px + bottom_polaroid_extra), "white")
-        thumb_with_border.paste(cropped, (half_border, half_border))
-        thumbs.append(thumb_with_border)
-
-    thumb_w, thumb_h = thumbs[0].size
-
-    collage_w = cols * thumb_w + (cols + 1) * half_border
-    collage_h = rows * thumb_h + (rows + 1) * half_border
-
-    collage = Image.new("RGB", (collage_w, collage_h), "white")
-    draw = ImageDraw.Draw(collage)
-
-    for index, thumb in enumerate(thumbs):
-        row, col = divmod(index, cols)
-        x = half_border + col * (thumb_w + half_border)
-        y = half_border + row * (thumb_h + half_border)
-        collage.paste(thumb, (x, y))
-
-    # Draw caption if provided
-    if caption_text:
-        caption_font = load_font(font_filename, caption_font_size)
-        if caption_font:
-            text_w, text_h = draw.textsize(caption_text, font=caption_font)
-            x = (collage_w - text_w) // 2
-            y = collage_h - text_h - half_border
-            draw.text((x, y), caption_text, fill=font_color, font=caption_font)
-
-    return collage
-
-# --- Streamlit UI ---
+# App Title
 st.set_page_config(page_title="📸 Dev's Polaroid Style Collage Creator")
 st.title("📸 Dev's Polaroid Style Collage Creator")
 
-with st.sidebar:
-    st.header("📐 Layout Options")
-    border_px = st.slider("Border Thickness (pixels)", min_value=10, max_value=200, value=40, step=5)
-    dpi = st.slider("Output DPI", min_value=72, max_value=1200, value=300, step=50)
-    caption_text = st.text_input("Caption (optional)", "")
-    caption_font_size = st.slider("Caption Font Size", min_value=10, max_value=300, value=40)
+# Sidebar Controls
+st.sidebar.header("Configuration")
+border_px = st.sidebar.slider("Border (pixels)", 10, 200, 50, step=5)
+dpi = st.sidebar.slider("DPI (Resolution)", 100, 2400, 300, step=100)
+caption_font_size = st.sidebar.slider("Caption Font Size", 10, 300, 60)
+font_color = st.sidebar.color_picker("Font Color", "#000000")
+caption_text = st.sidebar.text_input("Caption Text (optional)", "")
+font_file = st.sidebar.selectbox("Font", os.listdir("fonts") if os.path.exists("fonts") else [])
 
-    st.header("🎨 Style")
-    font_color = st.color_picker("Caption Font Color", "#000000")
-    available_fonts = sorted([f for f in os.listdir(FONT_DIR) if f.lower().endswith(".ttf")])
-    font_filename = st.selectbox("Font", options=available_fonts, index=available_fonts.index(DEFAULT_FONT) if DEFAULT_FONT in available_fonts else 0)
+# Upload Images
+uploaded_files = st.file_uploader("Upload images", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
 
-uploaded_files = st.file_uploader("Upload Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+def crop_center_square(img):
+    width, height = img.size
+    new_edge = min(width, height)
+    left = (width - new_edge) // 2
+    top = (height - new_edge) // 2
+    return img.crop((left, top, left + new_edge, top + new_edge))
 
-if uploaded_files:
-    images = [Image.open(file).convert("RGB") for file in uploaded_files]
-
+def get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size):
     try:
-        collage = get_collage(images, border_px, dpi, font_filename, font_color, caption_text, caption_font_size)
-        if collage:
-            st.image(collage, caption="Preview", use_container_width=True)
+        imgs = [Image.open(img).convert("RGB") for img in images]
+        if not imgs:
+            return None
 
-            # Save to BytesIO for download
-            img_bytes = io.BytesIO()
-            collage.save(img_bytes, format="JPEG", dpi=(dpi, dpi))
-            st.download_button("Download Collage", data=img_bytes.getvalue(), file_name="polaroid_collage.jpg", mime="image/jpeg")
+        # Determine thumbnail size
+        thumb_size_in = 2
+        thumb_size_px = int(thumb_size_in * dpi)
+        half_border = border_px // 2
+
+        thumbs = []
+        for img in imgs:
+            cropped = crop_center_square(img).resize((thumb_size_px, thumb_size_px), Image.LANCZOS)
+            new_img = Image.new("RGB", (thumb_size_px + border_px, thumb_size_px + border_px), (255, 255, 255))
+            new_img.paste(cropped, (half_border, half_border))
+            thumbs.append(new_img)
+
+        cols = int(len(thumbs) ** 0.5)
+        rows = (len(thumbs) + cols - 1) // cols
+
+        img_w, img_h = thumbs[0].size
+        canvas_w = cols * img_w + border_px
+        canvas_h = rows * img_h + border_px + (6 * border_px if caption_text else 0)
+
+        collage = Image.new("RGB", (canvas_w, canvas_h), (255, 255, 255))
+
+        for index, img in enumerate(thumbs):
+            row = index // cols
+            col = index % cols
+            x = col * img_w + half_border
+            y = row * img_h + half_border
+            collage.paste(img, (x, y))
+
+        if caption_text:
+            draw = ImageDraw.Draw(collage)
+            caption_font = ImageFont.truetype(font_path, size=caption_font_size)
+            bbox = draw.textbbox((0, 0), caption_text, font=caption_font)
+            text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            caption_x = (canvas_w - text_w) // 2
+            caption_y = canvas_h - (6 * border_px // 2) - text_h // 2
+            draw.text((caption_x, caption_y), caption_text, font=caption_font, fill=font_color)
+
+        return collage
     except Exception as e:
         st.error(f"Error generating collage: {e}")
-else:
-    st.info("Please upload one or more images to begin.")
+        return None
+
+if uploaded_files and font_file:
+    font_path = os.path.join("fonts", font_file)
+    collage = get_collage(uploaded_files, border_px, dpi, font_path, font_color, caption_text, caption_font_size)
+
+    if collage:
+        st.image(collage, caption="Polaroid Collage", use_container_width=True)
+
+        buf = io.BytesIO()
+        collage.save(buf, format="JPEG", dpi=(dpi, dpi))
+        st.download_button("Download Collage", buf.getvalue(), file_name="polaroid_collage.jpg", mime="image/jpeg")
