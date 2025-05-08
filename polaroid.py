@@ -71,16 +71,16 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text, cap
             polaroid = Image.new("RGB", (polaroid_width, polaroid_height), color="white")
             polaroid.paste(img, (half_border, half_border))
 
-            if caption_text:
-                draw_polaroid = ImageDraw.Draw(polaroid)
-                text_bbox = draw_polaroid.textbbox((0, 0), caption_text, font=caption_font)
-                text_w = text_bbox[2] - text_bbox[0]
-                text_h = text_bbox[3] - text_bbox[1]
-                text_x = (polaroid_width - text_w) // 2
-                text_y = thumb_size_px + half_border
-                draw_polaroid.text((text_x, text_y), caption_text, fill=font_color, font=caption_font)
-
             collage.paste(polaroid, (x, y))
+
+        # Add caption at the bottom of the collage
+        if caption_text:
+            caption_font = ImageFont.truetype(font_path, size=caption_font_size)
+            caption_width, caption_height = draw.textsize(caption_text, font=caption_font)
+            caption_x = (collage_width - caption_width) // 2
+            caption_y = collage_height - int(border_px * 1.5)  # Adjust bottom space for caption
+
+            draw.text((caption_x, caption_y), caption_text, font=caption_font, fill=font_color)
 
         return collage
 
