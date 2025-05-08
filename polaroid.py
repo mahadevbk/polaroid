@@ -7,7 +7,7 @@ import requests
 import math
 
 st.set_page_config(page_title="📸 Dev's Polaroid Style Collage Creator", layout="centered")
-st.title("📸 Polaroid Style Collage Creator")
+st.title("📸 Dev's Polaroid Style Collage Creator")
 
 # --- Font Setup ---
 GOOGLE_FONTS = {
@@ -23,8 +23,7 @@ GOOGLE_FONTS = {
     "Reenie Beanie": "https://github.com/google/fonts/raw/main/ofl/reeniebeanie/ReenieBeanie-Regular.ttf"
 }
 
-
-# Use your own GitHub-hosted font previews here
+# Optional preview images (can be hosted yourself)
 FONT_PREVIEWS = {
     name: f"https://your-username.github.io/polaroid-font-previews/previews/{name.replace(' ', '_')}.png"
     for name in GOOGLE_FONTS
@@ -35,7 +34,8 @@ dpi = st.sidebar.slider("📐 DPI of Final Image", 300, 1200, 300, step=100)
 border_mm = st.sidebar.slider("📏 Border Size (mm)", 0, 6, 3)
 uploaded_files = st.file_uploader("📷 Upload Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
 font_name = st.sidebar.radio("✏️ Choose Font (with Preview)", options=list(GOOGLE_FONTS.keys()))
-st.sidebar.image(FONT_PREVIEWS[font_name], caption=font_name, use_container_width=True)
+if font_name in FONT_PREVIEWS:
+    st.sidebar.image(FONT_PREVIEWS[font_name], caption=font_name, use_container_width=True)
 font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
 file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
 file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
@@ -56,7 +56,7 @@ def crop_center_square(img):
 def create_polaroid(img, border_px):
     side = img.size[0]
     border_total = border_px * 2
-    bottom_extra = border_px * 3  # More at bottom
+    bottom_extra = border_px * 3  # Extra for text at the bottom
     new_img = Image.new("RGB", (side + border_total, side + border_total + bottom_extra), "white")
     new_img.paste(img, (border_px, border_px))
     return new_img
@@ -67,7 +67,7 @@ def get_collage(images, border_px, dpi, font_bytes, font_color):
     if len(images) < total_images:
         images += images[:total_images - len(images)]
 
-    thumb_size_px = int((25.4 / dpi) * dpi)  # 1 inch square
+    thumb_size_px = int((25.4 / dpi) * dpi)  # 1 inch square thumbnails
     thumbnails = []
 
     for img in images:
@@ -90,7 +90,12 @@ def get_collage(images, border_px, dpi, font_bytes, font_color):
 
         draw = ImageDraw.Draw(collage)
         text = f"Photo {idx + 1}"
-        text_width, text_height = draw.textsize(text, font=font)
+
+        # Fix for deprecated textsize() method
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+
         text_x = x + (polaroid_size - text_width) // 2
         text_y = y + polaroid_size - int(border_px * 0.5) - text_height
         draw.text((text_x, text_y), text, fill=font_color, font=font)
