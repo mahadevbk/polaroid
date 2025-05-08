@@ -34,7 +34,7 @@ dpi = st.sidebar.slider("📐 DPI of Final Image", 300, 1200, 300, step=100)
 border_mm = st.sidebar.slider("📏 Border Size (mm)", 0, 6, 3)
 uploaded_files = st.file_uploader("📷 Upload Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
 font_name = st.sidebar.radio("✏️ Choose Font (with Preview)", options=list(GOOGLE_FONTS.keys()))
-st.sidebar.image(FONT_PREVIEWS[font_name], caption=font_name, use_column_width=True)
+st.sidebar.image(FONT_PREVIEWS[font_name], caption=font_name, use_container_width=True)
 font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
 file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
 file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
@@ -104,7 +104,7 @@ if uploaded_files:
     font_bytes = get_google_font(GOOGLE_FONTS[font_name])
     collage = get_collage(images, border_px, dpi, font_bytes, font_color)
 
-    st.image(collage, caption="Polaroid Style Collage", use_column_width=True)
+    st.image(collage, caption="Polaroid Style Collage", use_container_width=True)
 
     os.makedirs(file_path, exist_ok=True)
     final_path = os.path.join(file_path, f"{file_name}.jpg")
