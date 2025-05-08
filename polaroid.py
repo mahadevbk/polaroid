@@ -39,6 +39,7 @@ if font_name in FONT_PREVIEWS:
 font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
 file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
 file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
+caption_text = st.sidebar.text_input("📝 Caption for Bottom of Collage", value="Your Caption Here")
 
 # --- Helper Functions ---
 def get_google_font(font_url):
@@ -56,12 +57,12 @@ def crop_center_square(img):
 def create_polaroid(img, border_px):
     side = img.size[0]
     border_total = border_px * 2
-    bottom_extra = border_px * 3  # Extra for text at the bottom
+    bottom_extra = border_px * 3  # Extra space at the bottom for the caption
     new_img = Image.new("RGB", (side + border_total, side + border_total + bottom_extra), "white")
     new_img.paste(img, (border_px, border_px))
     return new_img
 
-def get_collage(images, border_px, dpi, font_bytes, font_color):
+def get_collage(images, border_px, dpi, font_bytes, font_color, caption_text):
     n = math.ceil(math.sqrt(len(images)))
     total_images = n ** 2
     if len(images) < total_images:
@@ -76,7 +77,7 @@ def get_collage(images, border_px, dpi, font_bytes, font_color):
         thumbnails.append(polaroid)
 
     polaroid_size = thumbnails[0].size[0]
-    collage_size = (n * polaroid_size, n * polaroid_size)
+    collage_size = (n * polaroid_size, n * polaroid_size + int(border_px * 3))  # Added space for caption
     collage = Image.new("RGB", collage_size, "white")
 
     font = ImageFont.truetype(font_bytes, size=polaroid_size // 10)
@@ -100,6 +101,17 @@ def get_collage(images, border_px, dpi, font_bytes, font_color):
         text_y = y + polaroid_size - int(border_px * 0.5) - text_height
         draw.text((text_x, text_y), text, fill=font_color, font=font)
 
+    # Add caption text at the bottom
+    if caption_text:
+        caption_font = ImageFont.truetype(font_bytes, size=polaroid_size // 8)
+        draw = ImageDraw.Draw(collage)
+        caption_bbox = draw.textbbox((0, 0), caption_text, font=caption_font)
+        caption_width = caption_bbox[2] - caption_bbox[0]
+        caption_height = caption_bbox[3] - caption_bbox[1]
+        caption_x = (collage_size[0] - caption_width) // 2
+        caption_y = collage_size[1] - int(border_px * 1.5) - caption_height
+        draw.text((caption_x, caption_y), caption_text, fill=font_color, font=caption_font)
+
     return collage
 
 # --- Main Logic ---
@@ -108,13 +120,13 @@ if uploaded_files:
     images = [Image.open(file).convert("RGB") for file in uploaded_files]
     border_px = int((border_mm / 25.4) * dpi)
     font_bytes = get_google_font(GOOGLE_FONTS[font_name])
-    collage = get_collage(images, border_px, dpi, font_bytes, font_color)
+    collage = get_collage(images, border_px, dpi, font_bytes, font_color, caption_text)
 
     st.image(collage, caption="Polaroid Style Collage", use_container_width=True)
 
     os.makedirs(file_path, exist_ok=True)
     final_path = os.path.join(file_path, f"{file_name}.jpg")
-    collage.save(final_path, dpi=(dpi, dpi))
+    collage.save(final_path, dpi=(dpi, dpi))  # Saving with proper DPI
     st.success(f"🎉 Image saved to {final_path}")
 
     img_buffer = io.BytesIO()
