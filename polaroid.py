@@ -33,7 +33,7 @@ font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
 file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
 file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
 caption_text = st.sidebar.text_input("📝 Caption for Bottom of Collage", value="Your Caption Here")
-caption_font_size = st.sidebar.slider("🔠 Caption Font Size", 10, 100, 24)
+caption_font_size = st.sidebar.slider("🔠 Caption Font Size", 10, 300, 24)  # Updated range for text size
 
 # --- Helper Functions ---
 def download_and_save_font(font_url):
