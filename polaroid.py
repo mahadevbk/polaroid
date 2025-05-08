@@ -37,16 +37,21 @@ caption_font_size = st.sidebar.slider("🔠 Caption Font Size", 10, 300, 24)  # 
 
 # --- Helper Functions ---
 def download_and_save_font(font_url):
-    # Download font to a temporary file
-    response = requests.get(font_url)
-    font_bytes = io.BytesIO(response.content)
-    
-    # Create a temporary file to save the font
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ttf")
-    with open(temp_file.name, 'wb') as f:
-        f.write(font_bytes.read())
-    
-    return temp_file.name
+    try:
+        # Download font to a temporary file
+        response = requests.get(font_url)
+        response.raise_for_status()  # Will raise an error for bad responses (4xx, 5xx)
+        font_bytes = io.BytesIO(response.content)
+        
+        # Create a temporary file to save the font
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ttf")
+        with open(temp_file.name, 'wb') as f:
+            f.write(font_bytes.read())
+        
+        return temp_file.name
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error downloading font: {e}")
+        return None
 
 def crop_center_square(img):
     width, height = img.size
@@ -97,7 +102,12 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text, cap
 
     # Add caption text at the bottom
     if caption_text:
-        caption_font = ImageFont.truetype(font_path, size=adjusted_caption_font_size)
+        try:
+            caption_font = ImageFont.truetype(font_path, size=adjusted_caption_font_size)
+        except Exception as e:
+            st.error(f"Error loading font: {e}")
+            return None
+
         draw = ImageDraw.Draw(collage)
         caption_bbox = draw.textbbox((0, 0), caption_text, font=caption_font)
         caption_width = caption_bbox[2] - caption_bbox[0]
@@ -117,15 +127,17 @@ if uploaded_files:
     # Download the selected font and use it
     font_path = download_and_save_font(GOOGLE_FONTS[font_name])
     
-    collage = get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size)
+    if font_path:
+        collage = get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size)
 
-    st.image(collage, caption="Polaroid Style Collage", use_container_width=True)
+        if collage:
+            st.image(collage, caption="Polaroid Style Collage", use_container_width=True)
 
-    os.makedirs(file_path, exist_ok=True)
-    final_path = os.path.join(file_path, f"{file_name}.jpg")
-    collage.save(final_path, dpi=(dpi, dpi))  # Saving with proper DPI
-    st.success(f"🎉 Image saved to {final_path}")
+            os.makedirs(file_path, exist_ok=True)
+            final_path = os.path.join(file_path, f"{file_name}.jpg")
+            collage.save(final_path, dpi=(dpi, dpi))  # Saving with proper DPI
+            st.success(f"🎉 Image saved to {final_path}")
 
-    img_buffer = io.BytesIO()
-    collage.save(img_buffer, format="JPEG")
-    st.download_button("⬇️ Download Image", data=img_buffer.getvalue(), file_name=f"{file_name}.jpg", mime="image/jpeg")
+            img_buffer = io.BytesIO()
+            collage.save(img_buffer, format="JPEG")
+            st.download_button("⬇️ Download Image", data=img_buffer.getvalue(), file_name=f"{file_name}.jpg", mime="image/jpeg")
