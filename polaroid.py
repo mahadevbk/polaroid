@@ -90,9 +90,13 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text, cap
         y = row * polaroid_size
         collage.paste(thumb, (x, y))
 
+    # Adjust text size based on DPI, ensuring it scales for different DPI values
+    # For high DPI, scale the caption font size up appropriately
+    adjusted_caption_font_size = max(caption_font_size, int(dpi / 100))  # Adjust caption size for higher DPI
+
     # Add caption text at the bottom
     if caption_text:
-        caption_font = ImageFont.truetype(font_path, size=caption_font_size)
+        caption_font = ImageFont.truetype(font_path, size=adjusted_caption_font_size)
         draw = ImageDraw.Draw(collage)
         caption_bbox = draw.textbbox((0, 0), caption_text, font=caption_font)
         caption_width = caption_bbox[2] - caption_bbox[0]
