@@ -21,8 +21,10 @@ GOOGLE_FONTS = {
     "Patrick Hand": "https://github.com/google/fonts/raw/main/ofl/patrickhand/PatrickHand-Regular.ttf",
     "Shadows Into Light": "https://github.com/google/fonts/raw/main/ofl/shadowsintolight/ShadowsIntoLight-Regular.ttf",
     "Satisfy": "https://github.com/google/fonts/raw/main/ofl/satisfy/Satisfy-Regular.ttf",
-    "Reenie Beanie": "https://github.com/google/fonts/raw/main/ofl/reeniebeanie/ReenieBeanie-Regular.ttf"
+    "Reenie Beanie": "https://github.com/google/fonts/raw/main/ofl/reeniebeanie/ReenieBeanie-Regular.ttf"  # Broken link
 }
+
+DEFAULT_FONT = "https://github.com/google/fonts/raw/main/apache/rocksalt/RockSalt-Regular.ttf"  # Fallback font
 
 # --- Sidebar Controls ---
 dpi = st.sidebar.slider("📐 DPI of Final Image", 300, 1200, 300, step=100)
@@ -124,8 +126,9 @@ if uploaded_files:
     images = [Image.open(file).convert("RGB") for file in uploaded_files]
     border_px = int((border_mm / 25.4) * dpi)
     
-    # Download the selected font and use it
-    font_path = download_and_save_font(GOOGLE_FONTS[font_name])
+    # Use fallback if the font is unavailable
+    font_url = GOOGLE_FONTS.get(font_name, DEFAULT_FONT)
+    font_path = download_and_save_font(font_url)
     
     if font_path:
         collage = get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size)
