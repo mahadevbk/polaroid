@@ -11,17 +11,18 @@ st.title("📸 Polaroid Style Collage Creator")
 
 # --- Font Setup ---
 GOOGLE_FONTS = {
-    "Covered By Your Grace": "https://fonts.gstatic.com/s/coveredbyyourgrace/v15/QGY2z_wNahGAdqQ43Rh_fKDvWNxdMKRbpw.woff2",
-    "Permanent Marker": "https://fonts.gstatic.com/s/permanentmarker/v13/Fh4uPib9w3w1AmH8zF4VX3N2LBKcgX8.woff2",
-    "Offside": "https://fonts.gstatic.com/s/offside/v18/HI_KiYMWKa9QrAykc5I.woff2",
-    "Rock Salt": "https://fonts.gstatic.com/s/rocksalt/v18/MwQ0bhv11fWD6QsAVOZrt0M6.woff2",
-    "Nothing You Could Do": "https://fonts.gstatic.com/s/nothingyoucoulddo/v19/oY1B8fbBpaP5OX3DtrRYf_Q2BPB1SnfZWFzFUw.woff2",
-    "Amatic SC": "https://fonts.gstatic.com/s/amaticsc/v28/TUZyzwprpvBS1izr_vOEDuSfU5c.woff2",
-    "Patrick Hand": "https://fonts.gstatic.com/s/patrickhand/v17/LDI1apSQOAYtSuYWp8ZhfYe8Uc8.woff2",
-    "Shadows Into Light": "https://fonts.gstatic.com/s/shadowsintolight/v16/UqyNK9UOIntux_czAvDQx_ZcHqZXBNQzdcD8.woff2",
-    "Satisfy": "https://fonts.gstatic.com/s/satisfy/v18/rP2Hp2yn6lkG50LoOZSCHBeHFl0.woff2",
-    "Reenie Beanie": "https://fonts.gstatic.com/s/reeniebeanie/v19/z7NSdR76eDkaJKZJFkkjuvWxXPq1rg.woff2"
+    "Covered By Your Grace": "https://github.com/google/fonts/raw/main/ofl/coveredbyyourgrace/CoveredByYourGrace.ttf",
+    "Permanent Marker": "https://github.com/google/fonts/raw/main/apache/permanentmarker/PermanentMarker.ttf",
+    "Offside": "https://github.com/google/fonts/raw/main/ofl/offside/Offside-Regular.ttf",
+    "Rock Salt": "https://github.com/google/fonts/raw/main/apache/rocksalt/RockSalt-Regular.ttf",
+    "Nothing You Could Do": "https://github.com/google/fonts/raw/main/ofl/nothingyoucoulddo/NothingYouCouldDo-Regular.ttf",
+    "Amatic SC": "https://github.com/google/fonts/raw/main/ofl/amaticsc/AmaticSC-Regular.ttf",
+    "Patrick Hand": "https://github.com/google/fonts/raw/main/ofl/patrickhand/PatrickHand-Regular.ttf",
+    "Shadows Into Light": "https://github.com/google/fonts/raw/main/ofl/shadowsintolight/ShadowsIntoLight-Regular.ttf",
+    "Satisfy": "https://github.com/google/fonts/raw/main/ofl/satisfy/Satisfy-Regular.ttf",
+    "Reenie Beanie": "https://github.com/google/fonts/raw/main/ofl/reeniebeanie/ReenieBeanie-Regular.ttf"
 }
+
 
 # Use your own GitHub-hosted font previews here
 FONT_PREVIEWS = {
