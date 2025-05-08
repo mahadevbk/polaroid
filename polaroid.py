@@ -73,7 +73,7 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
     thumbnails = []
 
     for img in images:
-        cropped = crop_center_square(img).resize((thumb_size_px, thumb_size_px), Image.ANTIALIAS)
+        cropped = crop_center_square(img).resize((thumb_size_px, thumb_size_px), Image.Resampling.LANCZOS)
         polaroid = create_polaroid(cropped, border_px)
         thumbnails.append(polaroid)
 
