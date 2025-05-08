@@ -33,6 +33,7 @@ font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
 file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
 file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
 caption_text = st.sidebar.text_input("📝 Caption for Bottom of Collage", value="Your Caption Here")
+caption_font_size = st.sidebar.slider("🔠 Caption Font Size", 10, 100, 24)
 
 # --- Helper Functions ---
 def download_and_save_font(font_url):
@@ -62,13 +63,13 @@ def create_polaroid(img, border_px):
     new_img.paste(img, (border_px, border_px))
     return new_img
 
-def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
+def get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size):
     n = math.ceil(math.sqrt(len(images)))
     total_images = n ** 2
     if len(images) < total_images:
         images += images[:total_images - len(images)]
 
-    # Set a higher size for thumbnails to preserve image resolution (based on DPI)
+    # Set the internal gap to match the border size
     thumb_size_px = int((2 * dpi))  # Resize to twice the DPI size for better resolution
     thumbnails = []
 
@@ -81,6 +82,7 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
     collage_size = (n * polaroid_size, n * polaroid_size + int(border_px * 6))  # Doubled bottom space for caption
     collage = Image.new("RGB", collage_size, "white")
 
+    # Paste the thumbnails with equal internal gap
     for idx, thumb in enumerate(thumbnails):
         row = idx // n
         col = idx % n
@@ -90,7 +92,7 @@ def get_collage(images, border_px, dpi, font_path, font_color, caption_text):
 
     # Add caption text at the bottom
     if caption_text:
-        caption_font = ImageFont.truetype(font_path, size=polaroid_size // 8)
+        caption_font = ImageFont.truetype(font_path, size=caption_font_size)
         draw = ImageDraw.Draw(collage)
         caption_bbox = draw.textbbox((0, 0), caption_text, font=caption_font)
         caption_width = caption_bbox[2] - caption_bbox[0]
@@ -110,7 +112,7 @@ if uploaded_files:
     # Download the selected font and use it
     font_path = download_and_save_font(GOOGLE_FONTS[font_name])
     
-    collage = get_collage(images, border_px, dpi, font_path, font_color, caption_text)
+    collage = get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size)
 
     st.image(collage, caption="Polaroid Style Collage", use_container_width=True)
 
