@@ -6,7 +6,7 @@ import io
 import requests
 import math
 
-st.set_page_config(page_title="📸 Polaroid Style Collage Creator", layout="centered")
+st.set_page_config(page_title="📸 Dev's Polaroid Style Collage Creator", layout="centered")
 st.title("📸 Polaroid Style Collage Creator")
 
 # --- Font Setup ---
