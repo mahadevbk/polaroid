@@ -1,146 +1,83 @@
+import os
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np
-import os
 import io
-import requests
-import math
-import tempfile
 
-st.set_page_config(page_title="📸 Dev's Polaroid Style Collage Creator", layout="centered")
-st.title("📸 Dev's Polaroid Style Collage Creator")
+st.set_page_config(page_title="📸 Dev's Polaroid Style Collage Creator", layout="wide")
 
-# --- Font Setup ---
-GOOGLE_FONTS = {
-    "Covered By Your Grace": "https://github.com/google/fonts/raw/main/ofl/coveredbyyourgrace/CoveredByYourGrace.ttf",
-    "Permanent Marker": "https://github.com/google/fonts/raw/main/apache/permanentmarker/PermanentMarker.ttf",
-    "Offside": "https://github.com/google/fonts/raw/main/ofl/offside/Offside-Regular.ttf",
-    "Rock Salt": "https://github.com/google/fonts/raw/main/apache/rocksalt/RockSalt-Regular.ttf",
-    "Nothing You Could Do": "https://github.com/google/fonts/raw/main/ofl/nothingyoucoulddo/NothingYouCouldDo-Regular.ttf",
-    "Amatic SC": "https://github.com/google/fonts/raw/main/ofl/amaticsc/AmaticSC-Regular.ttf",
-    "Patrick Hand": "https://github.com/google/fonts/raw/main/ofl/patrickhand/PatrickHand-Regular.ttf",
-    "Shadows Into Light": "https://github.com/google/fonts/raw/main/ofl/shadowsintolight/ShadowsIntoLight-Regular.ttf",
-    "Satisfy": "https://github.com/google/fonts/raw/main/ofl/satisfy/Satisfy-Regular.ttf",
-    "Reenie Beanie": "https://github.com/google/fonts/raw/main/ofl/reeniebeanie/ReenieBeanie-Regular.ttf"  # Broken link
+# Font directory and available fonts
+FONT_DIR = os.path.join(os.path.dirname(__file__), "fonts")
+FONT_OPTIONS = {
+    "Permanent Marker": os.path.join(FONT_DIR, "PermanentMarker-Regular.ttf"),
+    "Patrick Hand": os.path.join(FONT_DIR, "PatrickHand-Regular.ttf"),
+    "Reenie Beanie": os.path.join(FONT_DIR, "ReenieBeanie-Regular.ttf"),
+    # Add more fonts here as needed
 }
 
-DEFAULT_FONT = "https://github.com/google/fonts/raw/main/apache/rocksalt/RockSalt-Regular.ttf"  # Fallback font
-
-# --- Sidebar Controls ---
-dpi = st.sidebar.slider("📐 DPI of Final Image", 300, 1200, 300, step=100)
-border_mm = st.sidebar.slider("📏 Border Size (mm)", 0, 6, 3)
-uploaded_files = st.file_uploader("📷 Upload Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
-font_name = st.sidebar.radio("✏️ Choose Font (with Preview)", options=list(GOOGLE_FONTS.keys()))
-font_color = st.sidebar.color_picker("🎨 Font Color", "#000000")
-file_name = st.sidebar.text_input("📝 Output File Name", value="polaroid_collage")
-file_path = st.sidebar.text_input("📁 Save To Folder", value=".")
-caption_text = st.sidebar.text_input("📝 Caption for Bottom of Collage", value="Your Caption Here")
-caption_font_size = st.sidebar.slider("🔠 Caption Font Size", 10, 300, 24)  # Updated range for text size
-
-# --- Helper Functions ---
-def download_and_save_font(font_url):
-    try:
-        # Download font to a temporary file
-        response = requests.get(font_url)
-        response.raise_for_status()  # Will raise an error for bad responses (4xx, 5xx)
-        font_bytes = io.BytesIO(response.content)
-        
-        # Create a temporary file to save the font
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ttf")
-        with open(temp_file.name, 'wb') as f:
-            f.write(font_bytes.read())
-        
-        return temp_file.name
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error downloading font: {e}")
-        return None
-
-def crop_center_square(img):
-    width, height = img.size
-    side = min(width, height)
-    left = (width - side) // 2
-    top = (height - side) // 2
-    return img.crop((left, top, left + side, top + side))
-
-def create_polaroid(img, border_px):
-    side = img.size[0]
-    border_total = border_px * 2
-    bottom_extra = border_px * 3  # Extra space at the bottom for the caption
-    new_img = Image.new("RGB", (side + border_total, side + border_total + bottom_extra), "white")
-    new_img.paste(img, (border_px, border_px))
-    return new_img
+def crop_center_square(image):
+    width, height = image.size
+    min_dim = min(width, height)
+    left = (width - min_dim) // 2
+    top = (height - min_dim) // 2
+    return image.crop((left, top, left + min_dim, top + min_dim))
 
 def get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size):
-    n = math.ceil(math.sqrt(len(images)))
-    total_images = n ** 2
-    if len(images) < total_images:
-        images += images[:total_images - len(images)]
+    num_images = len(images)
+    grid_size = int(num_images ** 0.5) + (0 if (num_images ** 0.5).is_integer() else 1)
 
-    # Set the internal gap to match the border size
-    thumb_size_px = int((2 * dpi))  # Resize to twice the DPI size for better resolution
-    thumbnails = []
+    # Half border for each image; remaining for outer + polaroid bottom
+    half_border = border_px // 2
+    polaroid_extra = 6 * half_border
 
-    for img in images:
-        cropped = crop_center_square(img).resize((thumb_size_px, thumb_size_px), Image.Resampling.LANCZOS)
-        polaroid = create_polaroid(cropped, border_px)
-        thumbnails.append(polaroid)
+    polaroid_size = dpi // 2  # Size of each polaroid square image
+    caption_font = ImageFont.truetype(font_path, size=caption_font_size)
 
-    polaroid_size = thumbnails[0].size[0]
-    
-    # Create the collage size, with half of the border around the entire collage
-    collage_size = (n * polaroid_size + border_px, n * polaroid_size + border_px + int(border_px * 6))  # Doubled bottom space for caption
-    collage = Image.new("RGB", collage_size, "white")
+    collage_width = grid_size * polaroid_size + (grid_size + 1) * half_border
+    collage_height = grid_size * (polaroid_size + polaroid_extra) + (grid_size + 1) * half_border
 
-    # Paste the thumbnails with equal internal gap
-    for idx, thumb in enumerate(thumbnails):
-        row = idx // n
-        col = idx % n
-        x = col * polaroid_size + border_px // 2  # Add half border space between images
-        y = row * polaroid_size + border_px // 2
-        collage.paste(thumb, (x, y))
+    collage = Image.new("RGB", (collage_width, collage_height), "white")
 
-    # Adjust text size based on DPI, ensuring it scales for different DPI values
-    adjusted_caption_font_size = max(caption_font_size, int(dpi / 100))  # Adjust caption size for higher DPI
+    for idx, img in enumerate(images):
+        cropped = crop_center_square(img).resize((polaroid_size, polaroid_size), Image.Resampling.LANCZOS)
+        row, col = divmod(idx, grid_size)
 
-    # Add caption text at the bottom
-    if caption_text:
-        try:
-            caption_font = ImageFont.truetype(font_path, size=adjusted_caption_font_size)
-        except Exception as e:
-            st.error(f"Error loading font: {e}")
-            return None
+        x = half_border + col * (polaroid_size + half_border)
+        y = half_border + row * (polaroid_size + polaroid_extra + half_border)
 
-        draw = ImageDraw.Draw(collage)
-        caption_bbox = draw.textbbox((0, 0), caption_text, font=caption_font)
-        caption_width = caption_bbox[2] - caption_bbox[0]
-        caption_height = caption_bbox[3] - caption_bbox[1]
-        caption_x = (collage_size[0] - caption_width) // 2
-        caption_y = collage_size[1] - int(border_px * 2) - caption_height  # Increased bottom margin
-        draw.text((caption_x, caption_y), caption_text, fill=font_color, font=caption_font)
+        # Create a white polaroid background with extra space at bottom
+        polaroid_img = Image.new("RGB", (polaroid_size, polaroid_size + polaroid_extra), "white")
+        polaroid_img.paste(cropped, (0, 0))
+
+        if caption_text:
+            draw = ImageDraw.Draw(polaroid_img)
+            text_width, text_height = draw.textsize(caption_text, font=caption_font)
+            text_x = (polaroid_size - text_width) // 2
+            text_y = polaroid_size + ((polaroid_extra - text_height) // 2)
+            draw.text((text_x, text_y), caption_text, fill=font_color, font=caption_font)
+
+        collage.paste(polaroid_img, (x, y))
 
     return collage
 
-# --- Main Logic ---
-if uploaded_files:
-    st.success(f"{len(uploaded_files)} image(s) uploaded.")
-    images = [Image.open(file).convert("RGB") for file in uploaded_files]
-    border_px = int((border_mm / 25.4) * dpi)
-    
-    # Use fallback if the font is unavailable
-    font_url = GOOGLE_FONTS.get(font_name, DEFAULT_FONT)
-    font_path = download_and_save_font(font_url)
-    
-    if font_path:
-        collage = get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size)
+st.title("📸 Dev's Polaroid Style Collage Creator")
 
-        if collage:
-            st.image(collage, caption="Polaroid Style Collage", use_container_width=True)
+uploaded_images = st.file_uploader("Upload images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-            os.makedirs(file_path, exist_ok=True)
-            final_path = os.path.join(file_path, f"{file_name}.jpg")
-            collage.save(final_path, dpi=(dpi, dpi))  # Saving with proper DPI
-            st.success(f"🎉 Image saved to {final_path}")
+border_px = st.sidebar.slider("Border size (px)", 10, 200, 40)
+dpi = st.sidebar.slider("DPI", 300, 2400, 600)
+font_color = st.sidebar.color_picker("Text color", "#000000")
+caption_text = st.sidebar.text_input("Caption text", "")
+caption_font_size = st.sidebar.slider("Caption font size", 10, 300, 48)
+selected_font = st.sidebar.selectbox("Choose a font", list(FONT_OPTIONS.keys()))
+font_path = FONT_OPTIONS[selected_font]
 
-            img_buffer = io.BytesIO()
-            collage.save(img_buffer, format="JPEG")
-            st.download_button("⬇️ Download Image", data=img_buffer.getvalue(), file_name=f"{file_name}.jpg", mime="image/jpeg")
+if uploaded_images:
+    images = [Image.open(img).convert("RGB") for img in uploaded_images]
+    collage = get_collage(images, border_px, dpi, font_path, font_color, caption_text, caption_font_size)
+
+    buf = io.BytesIO()
+    collage.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+
+    st.image(collage, caption="Polaroid Collage", use_container_width=True)
+    st.download_button("Download Collage", data=byte_im, file_name="collage.png", mime="image/png")
