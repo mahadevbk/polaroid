@@ -84,3 +84,5 @@ if uploaded_files and font_file:
         buf = io.BytesIO()
         collage.save(buf, format="JPEG", dpi=(dpi, dpi))
         st.download_button("Download Collage", buf.getvalue(), file_name="polaroid_collage.jpg", mime="image/jpeg")
+
+st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
